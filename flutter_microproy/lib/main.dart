@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_microproy/models/models.dart';
 import 'package:flutter_microproy/screens/home_menu_screen.dart';
+import 'package:flutter_microproy/screens/splash_screen.dart';
 import 'package:flutter_microproy/services/storage_service.dart';
 import 'package:flutter_microproy/state/app_scope.dart';
 import 'package:flutter_microproy/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class MainApp extends StatefulWidget {
   const MainApp({
     this.storage = const StorageService(),
     this.initialSettings = GameSettings.defaults,
+    this.showSplash = true,
     super.key,
   });
 
@@ -27,6 +29,9 @@ class MainApp extends StatefulWidget {
 
   /// Ajustes leídos al arrancar.
   final GameSettings initialSettings;
+
+  /// Si es false, abre directo el menú. Las pruebas lo usan para no esperar.
+  final bool showSplash;
 
   @override
   State<MainApp> createState() => _MainAppState();
@@ -63,7 +68,7 @@ class _MainAppState extends State<MainApp> {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: AppTheme.toThemeMode(_settings.themeMode),
-        home: const HomeMenuScreen(),
+        home: widget.showSplash ? const SplashScreen() : const HomeMenuScreen(),
       ),
     );
   }

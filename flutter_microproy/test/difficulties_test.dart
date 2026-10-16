@@ -44,7 +44,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MainApp());
+    await tester.pumpWidget(const MainApp(showSplash: false));
     await tester.tap(find.byKey(const Key('play')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('username-continue')));
