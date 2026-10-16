@@ -1,0 +1,88 @@
+# Compila, prueba y publica la versión web en GitHub Pages.
+# También verifica que la app siga siendo una PWA instalable y offline.
+name: Desplegar web en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_microproy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Analizar el código
+        run: flutter analyze
+
+      - name: Correr las pruebas
+        run: flutter test
+
+      - name: Compilar la versión web
+        run: >
+          flutter build web --release --no-web-resources-cdn
+          --base-href "/${{ github.event.repository.name }}/"
+
+      - name: Verificar que sigue siendo PWA
+        run: |
+          set -e
+          test -f build/web/manifest.json || { echo "Falta manifest.json"; exit 1; }
+          python3 - <<'EOF'
+          import json, sys
+          m = json.load(open('build/web/manifest.json'))
+          faltan = [k for k in ('name', 'start_url', 'display', 'icons') if k not in m]
+          if faltan:
+              sys.exit(f"manifest.json no tiene: {faltan}")
+          tamanos = {icono.get('sizes') for icono in m['icons']}
+          if not {'192x192', '512x512'} <= tamanos:
+              sys.exit("Faltan los íconos de 192x192 y 512x512")
+          if m['display'] not in ('standalone', 'fullscreen', 'minimal-ui'):
+              sys.exit("display no permite instalar la app")
+          print("manifest.json OK")
+          EOF
+          test -f build/web/sw.js || { echo "Falta sw.js"; exit 1; }
+          grep -q "addEventListener('fetch'" build/web/sw.js || { echo "sw.js no responde peticiones: no funcionaría offline"; exit 1; }
+          grep -q "serviceWorker.register" build/web/index.html || { echo "index.html no registra el service worker"; exit 1; }
+          test -f build/web/canvaskit/canvaskit.wasm || { echo "CanvasKit no está incluido: no funcionaría offline"; exit 1; }
+          echo "PWA OK: instalable y con soporte offline"
+
+      - name: Subir la web compilada
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: flutter_microproy/build/web
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
