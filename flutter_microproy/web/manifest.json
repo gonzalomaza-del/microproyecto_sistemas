@@ -1,12 +1,12 @@
 {
-    "name": "flutter_microproy",
-    "short_name": "flutter_microproy",
+    "name": "15-Puzzle Flutter",
+    "short_name": "15-Puzzle",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#6750A4",
+    "theme_color": "#6750A4",
+    "description": "Rompecabezas deslizante 15-Puzzle hecho con Flutter.",
     "prefer_related_applications": false,
     "icons": [
         {
