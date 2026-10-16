@@ -14,6 +14,9 @@ import 'package:flutter_microproy/models/models.dart';
 /// Clave única de la lista. No renombrarla: los datos ya guardados dependen de ella.
 const String matchHistoryKey = 'match_history';
 
+/// Clave de los ajustes del juego.
+const String settingsKey = 'game_settings';
+
 /// Lee y escribe el historial. Un JSON dañado se trata como lista vacía.
 class StorageService {
   /// Crea el servicio. [preferences] se puede inyectar en pruebas.
@@ -46,6 +49,28 @@ class StorageService {
     final saved = await store.setString(matchHistoryKey, encoded);
     if (!saved) {
       throw StateError('No se pudo guardar el historial.');
+    }
+  }
+
+  /// Ajustes guardados. Si no hay nada o el JSON está dañado, usa los de fábrica.
+  Future<GameSettings> loadSettings() async {
+    try {
+      final store = await _store;
+      final raw = store.getString(settingsKey);
+      if (raw == null || raw.trim().isEmpty) return GameSettings.defaults;
+      return GameSettings.fromJson(jsonDecode(raw));
+    } on Object {
+      return GameSettings.defaults;
+    }
+  }
+
+  /// Guarda los ajustes, reemplazando los anteriores.
+  Future<void> saveSettings(GameSettings settings) async {
+    final store = await _store;
+    final encoded = jsonEncode(settings.toJson());
+    final saved = await store.setString(settingsKey, encoded);
+    if (!saved) {
+      throw StateError('No se pudieron guardar los ajustes.');
     }
   }
 }
