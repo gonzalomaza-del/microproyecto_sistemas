@@ -13,8 +13,8 @@ void main() {
     expect(Difficulty.medium.size, 4);
     expect(Difficulty.hard.size, 5);
     expect(timeLimitSeconds(3), 180);
-    expect(timeLimitSeconds(4), 300);
-    expect(timeLimitSeconds(5), 480);
+    expect(timeLimitSeconds(4), 420);
+    expect(timeLimitSeconds(5), 600);
   });
 
   test('los tres tamaños salen resolubles y se pueden mover', () {

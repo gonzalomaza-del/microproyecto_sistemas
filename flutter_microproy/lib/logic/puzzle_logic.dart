@@ -126,12 +126,12 @@ bool isNewHighScore(HighScore candidate, List<HighScore> existing) {
   return true;
 }
 
-/// Segundos de juego antes de la derrota por tiempo: 3×3, 4×4 y 5×5.
+/// Segundos antes de la derrota por tiempo: 3×3 son 3 min, 4×4 son 7 min y 5×5 son 10 min.
 int timeLimitSeconds(int size) {
   return switch (size) {
     3 => 180,
-    4 => 300,
-    5 => 480,
+    4 => 420,
+    5 => 600,
     _ => throw ArgumentError.value(size, 'size', 'Debe ser 3, 4 o 5.'),
   };
 }
