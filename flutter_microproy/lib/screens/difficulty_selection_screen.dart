@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_microproy/models/models.dart';
 import 'package:flutter_microproy/screens/game_screen.dart';
+import 'package:flutter_microproy/state/app_scope.dart';
 
 /// Elige Fácil, Medio o Difícil y abre la partida con [playerName].
 class DifficultySelectionScreen extends StatelessWidget {
@@ -15,11 +16,15 @@ class DifficultySelectionScreen extends StatelessWidget {
   final String playerName;
 
   void _start(BuildContext context, Difficulty difficulty) {
+    final scope = AppScope.of(context);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => GameScreen(
-          settings: GameSettings(difficulty: difficulty),
+          // Usa los ajustes guardados (estilo, animaciones) con la
+          // dificultad elegida, y el storage para poder guardar récords.
+          settings: scope.settings.copyWith(difficulty: difficulty),
           playerName: playerName,
+          storage: scope.storage,
         ),
       ),
     );
