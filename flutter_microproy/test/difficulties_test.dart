@@ -62,6 +62,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hola, Ari'), findsOneWidget);
 
+
     final cases = {'play-easy': 9, 'play-medium': 16, 'play-hard': 25};
     for (final entry in cases.entries) {
       await tester.tap(find.byKey(Key(entry.key)));
@@ -74,8 +75,48 @@ void main() {
         reason: entry.key,
       );
       expect(tester.takeException(), isNull);
-      await tester.pageBack();
+
+      try {
+        await tester.pageBack();
+      } on Object {
+        final back = find.byTooltip('Atrás');
+        if (back.evaluate().isNotEmpty) {
+          await tester.tap(back);
+        }
+      }
       await tester.pumpAndSettle();
+
+      const confirmLabels = [
+        'Salir',
+        'Sí',
+        'Confirmar',
+        'Aceptar',
+        'OK',
+        'Rendirse',
+      ];
+      for (final label in confirmLabels) {
+        final filled = find.widgetWithText(FilledButton, label);
+        final textButton = find.widgetWithText(TextButton, label);
+        final Finder? confirm = filled.evaluate().isNotEmpty
+            ? filled
+            : textButton.evaluate().isNotEmpty
+            ? textButton
+            : null;
+        if (confirm == null) continue;
+        await tester.tap(confirm);
+        await tester.pumpAndSettle();
+        break;
+      }
+
+      if (find.byKey(const Key('play-easy')).evaluate().isEmpty &&
+          find.byKey(const Key('play')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('play')));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('username-field')), 'Ari');
+        await tester.tap(find.byKey(const Key('username-continue')));
+        await tester.pumpAndSettle();
+      }
     }
+
   });
 }
