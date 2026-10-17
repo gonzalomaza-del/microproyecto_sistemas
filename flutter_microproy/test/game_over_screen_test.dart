@@ -153,6 +153,52 @@ void main() {
     expect(storage.saved, hasLength(1));
     expect(storage.saved.single.moves, 1);
   });
+
+  testWidgets('la flecha atrás pide confirmación y puede cancelarse', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const GameScreen(
+                        settings: settings,
+                        playerName: 'Ari',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Entrar'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('Entrar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('back')));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Desea salir de la partida?'), findsOneWidget);
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameScreen), findsOneWidget);
+    expect(find.text('Derrota'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('back')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sí'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entrar'), findsOneWidget);
+    expect(find.text('Derrota'), findsNothing);
+  });
 }
 
 class _MemoryStorage implements GameStorage {

@@ -68,6 +68,7 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _timer;
   String? _error;
   bool _ended = false;
+  bool _confirming = false;
 
   @override
   void initState() {
@@ -130,7 +131,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _confirmSurrender() async {
-    if (_ended || _error != null) return;
+    if (_ended || _error != null || _confirming) return;
+    _confirming = true;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -152,8 +154,47 @@ class _GameScreenState extends State<GameScreen> {
         );
       },
     );
+    _confirming = false;
     if (confirmed != true || !mounted || _ended) return;
-    _end(GameResult.surrendered);
+    await _end(GameResult.surrendered);
+  }
+
+  Future<void> _confirmLeave() async {
+    if (_ended || _error != null || _confirming) return;
+    _confirming = true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Salir'),
+          content: const Text('¿Desea salir de la partida?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('No'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sí'),
+            ),
+          ],
+        );
+      },
+    );
+    _confirming = false;
+    if (confirmed != true || !mounted || _ended) return;
+    _timer?.cancel();
+    _timer = null;
+    _ended = true;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  void _onBackPressed() {
+    if (_ended || _error != null) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    _confirmLeave();
   }
 
   Future<void> _end(GameResult result) async {
@@ -226,59 +267,73 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('15-Puzzle'),
-        actions: [
-          TextButton(
-            key: const Key('surrender'),
-            onPressed: _ended || _error != null ? null : _confirmSurrender,
-            child: const Text('Rendirse'),
+    final canLeave = _ended || _error != null;
+    return PopScope(
+      canPop: canLeave,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || canLeave) return;
+        _confirmLeave();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            key: const Key('back'),
+            tooltip: 'Atrás',
+            icon: const BackButtonIcon(),
+            onPressed: _onBackPressed,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: _error != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_error!, textAlign: TextAlign.center),
-                ),
-              )
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 700;
-                  final stats = _Stats(
-                    playerName: widget.playerName,
-                    moves: _moves,
-                    seconds: _seconds,
-                    timeLimit: _timeLimit,
-                    waiting: _phase == _Phase.ready,
-                  );
-                  final board = _Board(
-                    board: _board,
-                    size: widget.settings.difficulty.size,
-                    style: widget.settings.tileStyle,
-                    enabled: !_ended,
-                    animate: widget.settings.animationsEnabled,
-                    onTap: _onTileTap,
-                  );
-                  if (wide) {
-                    return Row(
+          title: const Text('15-Puzzle'),
+          actions: [
+            TextButton(
+              key: const Key('surrender'),
+              onPressed: _ended || _error != null ? null : _confirmSurrender,
+              child: const Text('Rendirse'),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(_error!, textAlign: TextAlign.center),
+                  ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 700;
+                    final stats = _Stats(
+                      playerName: widget.playerName,
+                      moves: _moves,
+                      seconds: _seconds,
+                      timeLimit: _timeLimit,
+                      waiting: _phase == _Phase.ready,
+                    );
+                    final board = _Board(
+                      board: _board,
+                      size: widget.settings.difficulty.size,
+                      style: widget.settings.tileStyle,
+                      enabled: !_ended,
+                      animate: widget.settings.animationsEnabled,
+                      onTap: _onTileTap,
+                    );
+                    if (wide) {
+                      return Row(
+                        children: [
+                          Expanded(child: board),
+                          SizedBox(width: 280, child: Center(child: stats)),
+                        ],
+                      );
+                    }
+                    return Column(
                       children: [
+                        stats,
                         Expanded(child: board),
-                        SizedBox(width: 280, child: Center(child: stats)),
                       ],
                     );
-                  }
-                  return Column(
-                    children: [
-                      stats,
-                      Expanded(child: board),
-                    ],
-                  );
-                },
-              ),
+                  },
+                ),
+        ),
       ),
     );
   }
